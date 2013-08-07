@@ -18,14 +18,15 @@ static void lcd_setup()
   lcd.begin(16, 2);
   // Print a message to the LCD.
   lcd.print("lcd is setup");
+  //lcd.autoscroll();
 }
 
 static void lcd_set(String d)
 {
   // assume 1 lcd line per call
   static int row = 0;
-  lcd.setCursor(row, 0);
-  lcd.println(d);
+  lcd.setCursor(0, row);
+  lcd.print(d);
   row ^= 1;
   if (debug){
     Serial.print("lcd_set:");
@@ -63,7 +64,7 @@ static void led_set(int s)
 {
   digitalWrite(led_pin, s);
   if (debug) {
-    Serial.print("lcd_set:");
+    Serial.print("led_set:");
     Serial.println(s);
   }
 }
@@ -73,6 +74,7 @@ void setup()
   serial_setup();
   lcd_setup();
   servo_setup();
+  led_setup();
 }
 
 const int cmd_size = 128;
