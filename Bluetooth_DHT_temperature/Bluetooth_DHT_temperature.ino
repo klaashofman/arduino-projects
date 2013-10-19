@@ -20,13 +20,13 @@ void setup(){
    // usb port
    Serial.begin(38400);
    // led
-   pinMode(led_pin, OUTPUT);
+   pinMode(led_pin, OUTPUT)
 }
 
 void loop(){
   
   sensor.read11(sensor_pin);
-  
+ 
   char c[32] = {0};
   int i = 0;
   while (bluetooth.available()){
@@ -46,6 +46,5 @@ void loop(){
     bluetooth.print(sensor.humidity);
     bluetooth.print(",");
     bluetooth.println(sensor.temperature);
-  }
-    
+  }  
 }

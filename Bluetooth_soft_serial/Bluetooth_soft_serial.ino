@@ -19,6 +19,7 @@ SoftwareSerial mySerial(rxPin, txPin);
 // H: AT command mode (slow blinking led)
 // L: RF-connection mode (fast blinking led)
 // LED 2: ON : pairing successfull
+
 // List of AT commands: 
 http://elecfreaks.com/store/download/datasheet/Bluetooth/HC-0305%20serail%20module%20AT%20commamd%20set%20201104%20revised.pdf
 // Warning: set terminal to "NO LINE ENDING"
