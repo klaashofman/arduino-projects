@@ -17,7 +17,7 @@ Digital:
 13: SD CLK
 Analog
 0: SENSOR1: temp
-1: SENSOR2: 
+1: SENSOR2: LDR
 2: SENSOR3
 3: SENSOR4:
 4: SDA/SCL RTC
@@ -36,7 +36,6 @@ Analog
 
 dht sensor;
 
-
 const int rxBt = 2;
 const int txBt = 3;
 SoftwareSerial bluetooth(rxBt, txBt);
@@ -45,6 +44,10 @@ SoftwareSerial bluetooth(rxBt, txBt);
 const int SD_chip_select = 10;
 const int led_green = 8;
 const int led_red = 9;
+File dataFile; 
+
+const int block_size = 2048;
+unsigned char block_buf[block_size];
 
 // RTC
 RTC_DS1307 RTC;
@@ -92,13 +95,15 @@ void setup(){
    if (!setup_sd()) {
      return;
    }
+   Serial.println("Bluetooth data logger");
 }
 
 static void toggle_led(int led)
 {
-  int s = digitalRead(led);
-  s ^= 1;
-  digitalWrite(led, s);
+//  int s = digitalRead(led);
+//  s ^= 1;
+//  digitalWrite(led, s);
+  digitalWrite(led, digitalRead(led) == 0 ? 1 : 0);
 }
 
 const String get_fmt_date()
@@ -132,53 +137,124 @@ const String get_sensor()
   return s;
 }
 
-void loop(){
-  sensor.read11(sensor_pin);
-  
-  String status = get_fmt_date();
-  status += ' ';
-  status += get_sensor();
-
-  Serial.println(status);
-  
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
-  
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println(status);
-    dataFile.close();
-    
-    delay(10);
-    toggle_led(led_red);    
-  }  
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
+static void process_cmd(const char *c, int bt)
+{
+  String cmd = c;
+  if (cmd == "HELP"){
+    if (bt) {
+      bluetooth.print("Boinkers BT:");
+      bluetooth.println(get_fmt_date());
+    } else {
+      Serial.println("Boinkers SR:");
+      Serial.println(get_fmt_date());
+    }
   }
+  if (cmd == "SENS"){
+    if (bt){ 
+      bluetooth.print(sensor.humidity);
+      bluetooth.print(",");
+      bluetooth.println(sensor.temperature);
+    } else {
+      Serial.print(sensor.humidity);
+      Serial.print(",");
+      Serial.println(sensor.temperature);
+    }
+  }
+//  if (cmd == "FILE"){
+//    String resp;
+//    if (dataFile){
+//      resp = String(dataFile.size(), DEC); // total dataFile size in bytes
+//      resp += " ";
+//      resp += String(block_size, DEC); // size of one block
+//      resp += " ";
+//      resp += String((dataFile.size() / block_size) + 1); // #blocks to copy + 1
+//    } else {
+//      resp = "File not found";
+//    }
+//  } // FILE
+//  if (cmd == "UPLOAD"){
+//    int block = 0;
+//    const int total_block = (dataFile.size() / block_size) + 1; 
+//    while (block < total_block){
+//      memset(block_buf, 0, block_size);
+//      if ( !dataFile.available() ){
+//        Serial.println("oops, dataFile ended primaturely");
+//        return;
+//      }
+//      if (dataFile.readBytes((char *)block_buf, block_size)){
+//        if (!bluetooth.write(block_buf, block_size)) {
+//          Serial.print("write bytes to bluetooth returned 0 on block");
+//          Serial.println(block);
+//          return;  
+//        }
+//      } else { 
+//        Serial.print("readbytes on dataFile returned 0 on block:");
+//        Serial.println(block);
+//        return;
+//      }
+//      Serial.print("uploading block: ");
+//      Serial.print(block, DEC);
+//      Serial.print("of total: ");
+//      Serial.println(total_block, DEC);
+//      block++;
+//    } // while
+//  } // UPLOAD
+//  if (cmd == "LOG")
+//  {
+//     if (bt) {
+//       while(dataFile.available()) {
+//         bluetooth.write(dataFile.read());
+//       }
+//       // dataFile.close();
+//     } else {
+//       while(dataFile.available()) {
+//         Serial.write(dataFile.read());
+//       }
+//     }
+//  } // LOG
+}
+
+static int tick = 0;
+
+void loop(){
+  // sample sensor each second
+  if (tick == 0 || !(tick % 100) ){
+    sensor.read11(sensor_pin);
+    String status = get_fmt_date();
+    status += ' ';
+    status += get_sensor();
+    Serial.println(status);
+    // open the dataFile. note that only one dataFile can be open at a time,
+    // so you have to close this one before opening another.
+    dataFile = SD.open("datalog.txt", FILE_WRITE);
+    // if the dataFile is available, write to it:
+    if (dataFile) {
+      dataFile.println(status);
+      dataFile.close();
+      delay(10);
+    } else {
+      Serial.println("error opening datalog.txt");
+    }
+  } // tick
+  
   char c[32] = {0};
   int i = 0;
   while (bluetooth.available()){
     c[i++] = bluetooth.read();
   }
-  String cmd = c;
-  if (cmd == "HELP"){
-    bluetooth.println("Boinkers");
+  if (i > 0) { 
+    process_cmd(c, 1);
   }  
-  if (cmd == "LED1"){
-    digitalWrite(led_green, 1);
-  } 
-  if (cmd == "LED0"){
-    digitalWrite(led_green, 0);
+  i = 0;
+  memset(c, sizeof(c), 0);
+  while (Serial.available()) {
+    c[i++] = Serial.read();
   }
-  if (cmd == "SENS"){
-    bluetooth.print(sensor.humidity);
-    bluetooth.print(",");
-    bluetooth.println(sensor.temperature);
+  if (i > 0) {
+    process_cmd(c, 0);
   }
- 
  delay(10);
- toggle_led(led_green);      
+ toggle_led(led_green);
+ tick++; 
 }
 
