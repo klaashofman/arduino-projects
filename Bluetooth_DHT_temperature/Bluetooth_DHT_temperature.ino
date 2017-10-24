@@ -1,7 +1,7 @@
 #include <dht.h>
 #include <SoftwareSerial.h>
 
-#define sensor_pin A1 //no ; here. Set equal to channel sensor is on
+#define sensor_pin A0 //no ; here. Set equal to channel sensor is on
 
 dht sensor;
 
