@@ -9,9 +9,9 @@
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
-#define PIN_ENC_DATA  31
-#define PIN_ENC_CLK   32
-#define PIN_ENC_SW    33 
+#define PIN_ENC_DATA  32
+#define PIN_ENC_CLK   31
+#define PIN_ENC_SW    30 
 
 Encoder myEnc(PIN_ENC_DATA, PIN_ENC_CLK);
 
@@ -24,9 +24,9 @@ void setup() {
   Serial.println("Simple encoder select test");
 
   /* setup encoder pins */
-  pinMode(PIN_ENC_DATA, INPUT_PULLUP);
-  pinMode(PIN_ENC_CLK, INPUT_PULLUP);
-  pinMode(PIN_ENC_SW, INPUT_PULLUP);
+  //pinMode(PIN_ENC_DATA, INPUT_PULLUP);
+  //pinMode(PIN_ENC_CLK, INPUT_PULLUP);
+  //pinMode(PIN_ENC_SW, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_ENC_SW), isr_select, FALLING);
   
   /* setup lcd */
@@ -36,17 +36,29 @@ void setup() {
 
   // Clear the buffer.
   display.clearDisplay();
-  display.setTextSize(1);
   
-  for (int i=0 ; i < 3 ; i++){
-    display.println(list[i]);
-  }
+  display.setTextSize(1);
+  display.setTextColor(WHITE); // othewise nothing on screen
+  display.setCursor(0,0);
+  
+  display.println("line1");
+  display.println("line2");
+  display.println("line3");
+  display.println("line4"); // int his mode upto 4 lines are printed
+
   display.display();
+
+  update_list(0);
 }
 
 long oldPosition  = -999;
 
 void update_list(int s){
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE); // othewise nothing on screen
+  display.setCursor(0,0);
+  
   for (int i=0 ; i < 3 ; i++){
     if (i == s)
       display.setTextColor(BLACK, WHITE); // 'inverted' text
