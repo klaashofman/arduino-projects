@@ -60,7 +60,14 @@ void loop() {
   sine2.amplitude(sin_attr.amplitude);
   sine2.phase(sin_attr.phase);
   AudioInterrupts();    // enable, both tones will start together
+
+  Serial.print(sin_attr.freq, 0);
+  Serial.print(" - ");
+  Serial.print(sin_attr.amplitude, 2);
+  Serial.print(" - ");
+  Serial.print(sin_attr.phase, 0);
+  Serial.println();
   
-  delay(50);
+  delay(500);
 
 }
