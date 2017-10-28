@@ -9,13 +9,12 @@
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
-#define PIN_ENC_DATA  32
-#define PIN_ENC_CLK   31
+#define PIN_ENC_DATA  31
+#define PIN_ENC_CLK   32
 #define PIN_ENC_SW    30 
 
 Encoder myEnc(PIN_ENC_DATA, PIN_ENC_CLK);
-
-volatile int selected = 0;
+int selected = 0;
 const char *list[] = { "one", "two", "three" };
 
 void setup() {
@@ -26,7 +25,7 @@ void setup() {
   /* setup encoder pins */
   //pinMode(PIN_ENC_DATA, INPUT_PULLUP);
   //pinMode(PIN_ENC_CLK, INPUT_PULLUP);
-  //pinMode(PIN_ENC_SW, INPUT_PULLUP);
+  pinMode(PIN_ENC_SW, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_ENC_SW), isr_select, FALLING);
   
   /* setup lcd */
@@ -63,27 +62,39 @@ void update_list(int s){
     if (i == s)
       display.setTextColor(BLACK, WHITE); // 'inverted' text
      else
-      display.setTextColor(WHITE);
-      
+      display.setTextColor(WHITE);      
     display.println(list[i]);
   }
   display.display();
 }
 
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  long newPosition = myEnc.read();
-  if (newPosition != oldPosition) {
-    oldPosition = newPosition;
-    Serial.println(newPosition);
-    if (newPosition > oldPosition)
+void loop() {  
+  long newPosition = myEnc.read(); // reads relative value
+  if (newPosition != oldPosition) {    
+    Serial.print("new rotary input, delta: ");
+    Serial.println(abs(newPosition - oldPosition), DEC);
+    /* the mechanical rotary switches create
+     * spurious triggers, filter them out by a 
+     * trial and error value (2)
+     * not perfect but ok for now
+     */
+    if (newPosition > oldPosition + 2)
       selected++;
-    else
+    else if (newPosition < oldPosition - 2)
       selected--;
-    selected %= 3;
+
+    if (selected < 0)
+      selected = 2;     // scroll to last
+    if (selected > 2)
+      selected = 0;     // scroll to first
+
+    oldPosition = newPosition;
+      
     update_list(selected);
+    oldPosition = newPosition; // make sure to put this _after_ the test
   }
+  delay(50);
 }
 
 void isr_select(){
